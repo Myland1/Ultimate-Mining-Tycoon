@@ -247,7 +247,14 @@ local Button = MainTab:CreateButton({
       task.wait(0.1) -- kleine vertraging om zeker te zijn dat character klaar is
       newHrp.CFrame = CFrame.new(savedPosition)
 
-      -- Stap 5: Positie vergeten (gewoon niks doen, geen variabele opslaan)
+      -- Stap 5: Automatisch op '2' drukken om TNT/tool te equippen
+      pcall(function()
+         keypress(0x32) -- 0x32 is de keycode voor '2'
+         task.wait(0.8)
+         keyrelease(0x32)
+      end)
+
+      -- Stap 6: Positie vergeten (geen variabele opslaan)
    end,
 })
 
