@@ -41,7 +41,7 @@ Rayfield:Notify({
    Image = 4483362458,
 })
 
-local MainTab = Window:CreateTab("QOL", 4483362458) -- Title, Image
+local MainTab = Window:CreateTab("Playerstuff", 4483362458) -- Title, Image
 local MainSection = MainTab:CreateSection("Player")
 
 local Slider = MainTab:CreateSlider({
@@ -178,12 +178,104 @@ local Slider = MainTab:CreateSlider({
    end,
 })
 
-local MainSection = MainTab:CreateSection("Mining")
+-- NoClip Toggle
+local noclip = false
+local noclipConnection
+
+local Toggle = MainTab:CreateToggle({
+   Name = "NoClip",
+   CurrentValue = false,
+   Flag = "Toggle2",
+   Callback = function(Value)
+      local player = game.Players.LocalPlayer
+      local character = player.Character or player.CharacterAdded:Wait()
+
+      if Value then
+         noclip = true
+
+         noclipConnection = game:GetService("RunService").Stepped:Connect(function()
+            if noclip and character then
+               for _, part in pairs(character:GetDescendants()) do
+                  if part:IsA("BasePart") and part.CanCollide == true then
+                     part.CanCollide = false
+                  end
+               end
+            end
+         end)
+      else
+         noclip = false
+
+         -- Zorg dat alles weer normaal is (collision aanzetten)
+         if noclipConnection then
+            noclipConnection:Disconnect()
+            noclipConnection = nil
+         end
+
+         for _, part in pairs(character:GetDescendants()) do
+            if part:IsA("BasePart") then
+               part.CanCollide = true
+            end
+         end
+      end
+   end,
+})
+
+local MainTab = Window:CreateTab("Mining", 4483362458) -- Title, Image
+local MainSection = MainTab:CreateSection("TNT")
 
 local Button = MainTab:CreateButton({
    Name = "Refresh TNT",
    Callback = function()
-   -- The function that takes place when the button is pressed
+      local player = game.Players.LocalPlayer
+      local character = player.Character or player.CharacterAdded:Wait()
+      local hrp = character:FindFirstChild("HumanoidRootPart")
+
+      if not hrp then return end
+
+      -- Stap 1: Positie opslaan
+      local savedPosition = hrp.Position
+
+      -- Stap 2: Character resetten
+      player.Character:BreakJoints()
+
+      -- Stap 3: Wachten tot character opnieuw gespawned is
+      player.CharacterAdded:Wait()
+      local newChar = player.Character
+      local newHrp = newChar:WaitForChild("HumanoidRootPart")
+
+      -- Stap 4: Terug teleporteren naar opgeslagen positie
+      task.wait(0.1) -- kleine vertraging om zeker te zijn dat character klaar is
+      newHrp.CFrame = CFrame.new(savedPosition)
+
+      -- Stap 5: Positie vergeten (gewoon niks doen, geen variabele opslaan)
    end,
 })
+
+local Keybind = MainTab:CreateKeybind({
+   Name = "Keybind: Refresh TNT",
+   CurrentKeybind = "T", -- Hier stel je de gewenste toets in
+   HoldToInteract = false,
+   Flag = "Keybind1",
+   Callback = function()
+      local player = game.Players.LocalPlayer
+      local character = player.Character or player.CharacterAdded:Wait()
+      local hrp = character:FindFirstChild("HumanoidRootPart")
+
+      if not hrp then return end
+
+      -- Positie opslaan
+      local savedPosition = hrp.Position
+
+      -- Character resetten
+      player.Character:BreakJoints()
+
+      -- Character opnieuw spawnen en terug teleporteren
+      player.CharacterAdded:Wait()
+      local newChar = player.Character
+      local newHrp = newChar:WaitForChild("HumanoidRootPart")
+      task.wait(0.1)
+      newHrp.CFrame = CFrame.new(savedPosition)
+   end,
+})
+
 
