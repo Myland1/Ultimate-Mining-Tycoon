@@ -34,4 +34,12 @@ local Window = Rayfield:CreateWindow({
    }
 })
 
-local Tab = Window:CreateTab("QOL", 4483362458) -- Title, Image
+local MainTab = Window:CreateTab("QOL", 4483362458) -- Title, Image
+local MainSection = Tab:CreateSection("Main")
+
+local Button = Tab:CreateButton({
+   Name = "Button Example",
+   Callback = function()
+   -- The function that takes place when the button is pressed
+   end,
+})
