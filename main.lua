@@ -244,23 +244,21 @@ local Button = MainTab:CreateButton({
       local newHrp = newChar:WaitForChild("HumanoidRootPart")
 
       -- Stap 4: Terug teleporteren naar opgeslagen positie
-      task.wait(0.1) -- kleine vertraging om zeker te zijn dat character klaar is
+      task.wait(0.1)
       newHrp.CFrame = CFrame.new(savedPosition)
 
       -- Stap 5: Automatisch op '2' drukken om TNT/tool te equippen
-      pcall(function()
-         keypress(0x32) -- 0x32 is de keycode voor '2'
-         task.wait(0.8)
-         keyrelease(0x32)
-      end)
-
-      -- Stap 6: Positie vergeten (geen variabele opslaan)
+      local VirtualInputManager = game:GetService("VirtualInputManager")
+      task.wait(0.3)
+      VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Two, false, game)
+      task.wait(0.1)
+      VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Two, false, game)
    end,
 })
 
 local Keybind = MainTab:CreateKeybind({
    Name = "Keybind: Refresh TNT",
-   CurrentKeybind = "T", -- Hier stel je de gewenste toets in
+   CurrentKeybind = "T",
    HoldToInteract = false,
    Flag = "Keybind1",
    Callback = function()
@@ -282,7 +280,129 @@ local Keybind = MainTab:CreateKeybind({
       local newHrp = newChar:WaitForChild("HumanoidRootPart")
       task.wait(0.1)
       newHrp.CFrame = CFrame.new(savedPosition)
+
+      -- Automatisch op '2' drukken om TNT/tool te equippen
+      local VirtualInputManager = game:GetService("VirtualInputManager")
+      task.wait(0.3)
+      VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Two, false, game)
+      task.wait(0.1)
+      VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Two, false, game)
    end,
 })
 
+-- TELEPORT TAB
+local TeleportTab = Window:CreateTab("Teleport", 4483362458)
+local TeleportSection = TeleportTab:CreateSection("Player Teleport")
 
+-- Variabele om de geselecteerde speler op te slaan
+local selectedPlayerName = nil
+
+-- Functie om een verse spelerslijst op te halen
+local function getPlayerList()
+    local players = {}
+    for _, player in ipairs(game.Players:GetPlayers()) do
+        if player ~= game.Players.LocalPlayer then
+            table.insert(players, player.Name)
+        end
+    end
+    return players
+end
+
+-- DROPDOWN met dynamische updates
+local PlayerDropdown = TeleportTab:CreateDropdown({
+    Name = "Select Player",
+    Options = getPlayerList(),
+    CurrentOption = nil,
+    Flag = "SelectedPlayerDropdown",
+    Callback = function(option)
+        selectedPlayerName = typeof(option) == "table" and option[1] or option
+        print("Selected Player: " .. tostring(selectedPlayerName))
+    end,
+})
+
+-- Functie om de dropdown te verversen
+local function refreshPlayerDropdown()
+    local updatedList = getPlayerList()
+    PlayerDropdown:SetOptions(updatedList)
+end
+
+-- Automatisch verversen bij join/leave
+game.Players.PlayerAdded:Connect(function()
+    task.wait(0.5)
+    refreshPlayerDropdown()
+end)
+
+game.Players.PlayerRemoving:Connect(function()
+    refreshPlayerDropdown()
+end)
+
+-- TELEPORT KNOP
+TeleportTab:CreateButton({
+    Name = "Teleport to selected Player",
+    Callback = function()
+        local success, err = pcall(function()
+            local selectedName = selectedPlayerName
+            if not selectedName or selectedName == "" then
+                Rayfield:Notify({
+                    Title = "Wrong",
+                    Content = "No Player selected!",
+                    Duration = 3,
+                })
+                return
+            end
+
+            print("Selected Player:", selectedName)
+
+            local selectedPlayer = game.Players:FindFirstChild(selectedName)
+            if not selectedPlayer then
+                Rayfield:Notify({
+                    Title = "Wrong",
+                    Content = "Player '" .. selectedName .. "' doesnt exist.",
+                    Duration = 3,
+                })
+                return
+            end
+
+            local targetChar = selectedPlayer.Character
+            local targetHRP = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
+            if not targetHRP then
+                Rayfield:Notify({
+                    Title = "Fout",
+                    Content = "Player doesnt have an HumanoidRootPart.",
+                    Duration = 3,
+                })
+                return
+            end
+
+            local myChar = game.Players.LocalPlayer.Character
+            local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
+            if not myHRP then
+                Rayfield:Notify({
+                    Title = "Fout",
+                    Content = "You dont have an HumanoidRootPart.",
+                    Duration = 3,
+                })
+                return
+            end
+
+            myHRP.CFrame = targetHRP.CFrame + Vector3.new(3, 0, 0)
+
+            Rayfield:Notify({
+                Title = "Succes",
+                Content = "Teleported to " .. selectedName,
+                Duration = 2.5,
+            })
+        end)
+
+        if not success then
+            Rayfield:Notify({
+                Title = "Callback Error",
+                Content = tostring(err),
+                Duration = 5,
+            })
+            warn("[Teleport Callback Error]:", err)
+        end
+    end
+})
+
+local MainTab = Window:CreateTab("Troll", 4483362458) -- Title, Image
